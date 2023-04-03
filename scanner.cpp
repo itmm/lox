@@ -2,7 +2,7 @@
 
 #include "err.h"
 
-std::map<std::string, Token_Type> keywords_ = {
+std::map<std::string, Token_Type> Scanner::keywords_ = {
         { "and", Token_Type::AND },
         { "class", Token_Type::CLASS },
         { "else", Token_Type::ELSE },

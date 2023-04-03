@@ -4,6 +4,8 @@
 #include <memory>
 #include <utility>
 
+#include "literal.h"
+
 enum class Token_Type {
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
     COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR,
@@ -19,75 +21,89 @@ enum class Token_Type {
     END_OF_DATA
 };
 
-class Literal {
-    public:
-        virtual explicit operator std::string() const = 0;
-        [[nodiscard]] virtual std::unique_ptr<Literal> copy() const = 0;
-        virtual ~Literal() = default;
-};
-
-class Bool_Literal: public Literal {
-        const bool value_;
-    public:
-        explicit Bool_Literal(bool value): value_ { value } { }
-        [[nodiscard]] std::unique_ptr<Literal> copy() const override { return std::make_unique<Bool_Literal>(value_); }
-        explicit operator std::string() const override { return value_ ? "true" : "false"; }
-};
-
-class String_Literal: public Literal {
-        const std::string value_;
-    public:
-        explicit String_Literal(std::string value): value_ { std::move(value) } { }
-        [[nodiscard]] std::unique_ptr<Literal> copy() const override { return std::make_unique<String_Literal>(value_); }
-        explicit operator std::string() const override { return value_; }
-};
-
-class Number_Literal: public Literal {
-        const double value_;
-    public:
-        explicit Number_Literal(double value): value_ { value } { }
-        [[nodiscard]] std::unique_ptr<Literal> copy() const override { return std::make_unique<Number_Literal>(value_); }
-        explicit operator std::string() const override { return std::to_string(value_); }
-};
+inline std::string to_string(const Token_Type &type) {
+    switch (type) {
+        case Token_Type::LEFT_PAREN: return "(";
+        case Token_Type::RIGHT_PAREN: return ")";
+        case Token_Type::LEFT_BRACE: return "{";
+        case Token_Type::RIGHT_BRACE: return "}";
+        case Token_Type::COMMA: return ",";
+        case Token_Type::DOT: return ".";
+        case Token_Type::MINUS: return "-";
+        case Token_Type::PLUS: return "+";
+        case Token_Type::SEMICOLON: return ";";
+        case Token_Type::SLASH: return "/";
+        case Token_Type::STAR: return "*";
+        case Token_Type::BANG: return "!";
+        case Token_Type::BANG_EQUAL: return "!=";
+        case Token_Type::EQUAL: return "=";
+        case Token_Type::EQUAL_EQUAL: return "==";
+        case Token_Type::GREATER: return ">";
+        case Token_Type::GREATER_EQUAL: return ">=";
+        case Token_Type::LESS: return "<";
+        case Token_Type::LESS_EQUAL: return "<=";
+        case Token_Type::IDENTIFIER: return "IDENTIFIER";
+        case Token_Type::STRING: return "STRING";
+        case Token_Type::NUMBER: return "NUMBER";
+        case Token_Type::AND: return "and";
+        case Token_Type::CLASS: return "class";
+        case Token_Type::ELSE: return "else";
+        case Token_Type::FALSE: return "false";
+        case Token_Type::FUN: return "fun";
+        case Token_Type::FOR: return "for";
+        case Token_Type::IF: return "if";
+        case Token_Type::NIL: return "nil";
+        case Token_Type::OR: return "or";
+        case Token_Type::PRINT: return "print";
+        case Token_Type::RETURN: return "return";
+        case Token_Type::SUPER: return "super";
+        case Token_Type::THIS: return "this";
+        case Token_Type::TRUE: return "true";
+        case Token_Type::VAR: return "var";
+        case Token_Type::WHILE: return "while";
+        case Token_Type::END_OF_DATA: return "EOF";
+        default: return "unknown token " + std::to_string(static_cast<int>(type));
+    }
+}
 
 class Token {
-        const Token_Type type_;
-        const std::string lexeme_;
-        const std::unique_ptr<Literal> literal_;
-        const int line_ = 1;
-
-        static std::unique_ptr<Literal> duplicate_literal(const std::unique_ptr<Literal> &literal) {
+        static std::unique_ptr<Literal_Base> duplicate_literal(const std::unique_ptr<Literal_Base> &literal) {
             if (! literal) { return {}; }
             return std::move(literal->copy());
         }
 
     public:
+        const Token_Type type;
+        const std::string lexeme;
+        const std::unique_ptr<Literal_Base> literal;
+        const int line;
+
         Token(Token_Type type, std::string lexeme, int line):
-            type_ { type }, lexeme_ { std::move(lexeme) }, literal_ { }, line_ { line }
+            type { type }, lexeme { std::move(lexeme) }, literal { }, line { line }
         { }
 
         Token(Token_Type type, std::string lexeme, bool literal, int line):
-            type_ { type }, lexeme_ { std::move(lexeme) },
-            literal_ { std::make_unique<Bool_Literal>(literal) }, line_ { line }
+            type { type }, lexeme { std::move(lexeme) },
+            literal { std::make_unique<Bool_Literal>(literal) }, line { line }
         { }
 
         Token(Token_Type type, std::string lexeme, std::string literal, int line):
-            type_ { type }, lexeme_ { std::move(lexeme) },
-            literal_ { std::make_unique<String_Literal>(std::move(literal)) }, line_ { line }
+            type { type }, lexeme { std::move(lexeme) },
+            literal { std::make_unique<String_Literal>(std::move(literal)) }, line { line }
         { }
 
         Token(Token_Type type, std::string lexeme, double literal, int line):
-            type_ { type }, lexeme_ { std::move(lexeme) },
-            literal_ { std::make_unique<Number_Literal>(literal) }, line_ { line }
+            type { type }, lexeme { std::move(lexeme) },
+            literal { std::make_unique<Number_Literal>(literal) }, line { line }
         { }
 
         Token(const Token &token):
-            type_ { token.type_ }, lexeme_ { token.lexeme_ },
-            literal_ { duplicate_literal(token.literal_) }, line_ { token.line_ }
+            type { token.type }, lexeme { token.lexeme },
+            literal { duplicate_literal(token.literal) }, line { token.line }
         { }
 
         explicit operator std::string() const {
-            return std::to_string(static_cast<int>(type_)) + " " + lexeme_ + " " +
-                    (literal_ ? static_cast<std::string>(*literal_) : "nil");
+            return to_string(type) + " " + lexeme + " " +
+                    (literal ? static_cast<std::string>(*literal) : "nil");
         }
 };

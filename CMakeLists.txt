@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.18)
+project(lox)
+
+set(CMAKE_CXX_STANDARD 20)
+
+add_executable(lox main.cpp scanner.cpp scanner.h err.h err.cpp token.cpp token.h)

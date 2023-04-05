@@ -12,10 +12,17 @@ class Literal_Base {
         virtual ~Literal_Base() = default;
 };
 
+class Nil_Literal: public Literal_Base {
+    public:
+        Nil_Literal() = default;
+        [[nodiscard]] std::unique_ptr<Literal_Base> copy() const override { return std::make_unique<Nil_Literal>(); }
+        explicit operator std::string() const override { return "nil"; }
+};
+
 class Bool_Literal: public Literal_Base {
     public:
         const bool value;
-        explicit Bool_Literal(bool v): value { value } { }
+        explicit Bool_Literal(bool v): value { v } { }
         [[nodiscard]] std::unique_ptr<Literal_Base> copy() const override { return std::make_unique<Bool_Literal>(value); }
         explicit operator std::string() const override { return value ? "true" : "false"; }
 };
@@ -41,5 +48,11 @@ class Literal: public Expr {
         const std::unique_ptr<Literal_Base> value;
         explicit Literal(std::unique_ptr<Literal_Base> &&v): value { std::move(v) } { }
 
-        void accept(Expr_Visitor &visitor) const { visitor.visit(*this); }
+        void accept(Expr_Visitor &visitor) const override { visitor.visit(*this); }
+
+        static std::unique_ptr<Literal> create() { return std::make_unique<Literal>(std::make_unique<Nil_Literal>()); }
+        static std::unique_ptr<Literal> create(bool value) { return std::make_unique<Literal>(std::make_unique<Bool_Literal>(value)); }
+        static std::unique_ptr<Literal> create(std::string value) { return std::make_unique<Literal>(std::make_unique<String_Literal>(std::move(value))); }
+        static std::unique_ptr<Literal> create(double value) { return std::make_unique<Literal>(std::make_unique<Number_Literal>(value)); }
+
 };

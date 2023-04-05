@@ -3,15 +3,18 @@
 #include <utility>
 
 #include "err.h"
-#include "scanner.h"
+#include "parser.h"
 #include "print_visitor.h"
+#include "scanner.h"
 
 void run(std::string source) {
     Scanner scanner { std::move(source) };
     auto tokens { scanner.scan_tokens() };
-    for (const auto &t: tokens) {
-        std::cout << static_cast<std::string>(t) << "\n";
-    }
+    Parser parser { tokens };
+    auto expr { parser.parse() };
+    if (had_error) { return; }
+    Print_Visitor visitor { std::cout, *expr };
+    std::cout << "\n";
 }
 
 void run_file(const char *path) {
@@ -34,18 +37,6 @@ void run_prompt() {
 }
 
 int main(int argc, const char *argv[]) {
-    Binary expression {
-        Token(Token_Type::STAR, "*", 1),
-        std::make_unique<Unary>(
-            Token(Token_Type::MINUS, "-", 1),
-            std::make_unique<Literal>(std::make_unique<Number_Literal>(123))
-        ),
-        std::make_unique<Grouping>(
-            std::make_unique<Literal>(std::make_unique<Number_Literal>(45.67))
-        )
-    };
-    Print_Visitor visitor(std::cout, expression); std::cout << "\n";
-
     switch (argc) {
         case 2:
             run_file(argv[1]);

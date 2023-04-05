@@ -10,5 +10,5 @@ class Unary: public Expr {
 
         Unary(const Token &t, std::unique_ptr<Expr> &&r): token { t }, right { std::move(r) } { }
 
-        void accept(Expr_Visitor &visitor) const { visitor.visit(*this); }
+        void accept(Expr_Visitor &visitor) const override { visitor.visit(*this); }
 };

@@ -16,5 +16,5 @@ class Binary: public Expr {
             token { t }, left { std::move(l) }, right { std::move(r) }
         { }
 
-        void accept(Expr_Visitor &visitor) const { visitor.visit(*this); }
+        void accept(Expr_Visitor &visitor) const override { visitor.visit(*this); }
 };

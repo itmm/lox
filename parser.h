@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "binary.h"
@@ -100,9 +101,9 @@ class Parser {
         }
 
 
-        Exception error(const Token &token, std::string message) {
-            ::error(token, message);
-            return Exception();
+        static Exception error(const Token &token, std::string message) {
+            ::error(token, std::move(message));
+            return {};
         }
 
         Token consume(const Token_Type &expected, std::string message) {
@@ -158,7 +159,7 @@ class Parser {
                 return expression();
             }
             catch (const Exception &ex) {
-                return std::unique_ptr<Expr>();
+                return {};
             }
         }
 };

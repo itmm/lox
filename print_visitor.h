@@ -21,7 +21,7 @@ class Print_Visitor: public Expr_Visitor {
     public:
         explicit Print_Visitor(std::ostream &out, const Expr &e): out_ { out } { e.accept(*this); }
 
-        void visit(const Binary &binary) {
+        void visit(const Binary &binary) override {
             out_ << "(" << to_string(binary.token.type) << " ";
             write_expr(binary.left);
             out_ << " ";
@@ -29,15 +29,15 @@ class Print_Visitor: public Expr_Visitor {
             out_ << ")";
         }
 
-        void visit(const Grouping &grouping) {
+        void visit(const Grouping &grouping) override {
             out_ << "(group "; write_expr(grouping.expression); out_ << ")";
         }
 
-        void visit(const Literal &literal) {
+        void visit(const Literal &literal) override {
             out_ << static_cast<std::string>(*literal.value);
         }
 
-        void visit(const Unary &unary) {
+        void visit(const Unary &unary) override {
             out_ << "(" << to_string(unary.token.type) << " ";
             write_expr(unary.right);
             out_ << ")";

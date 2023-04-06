@@ -67,7 +67,7 @@ inline std::string to_string(const Token_Type &type) {
 }
 
 class Token {
-        static std::unique_ptr<Literal_Base> duplicate_literal(const std::unique_ptr<Literal_Base> &literal) {
+        static std::unique_ptr<Literal> duplicate_literal(const std::unique_ptr<Literal> &literal) {
             if (! literal) { return {}; }
             return std::move(literal->copy());
         }
@@ -75,7 +75,7 @@ class Token {
     public:
         const Token_Type type;
         const std::string lexeme;
-        const std::unique_ptr<Literal_Base> literal;
+        const Literal_p literal;
         const int line;
 
         Token(Token_Type type, std::string lexeme, int line):
@@ -84,17 +84,17 @@ class Token {
 
         Token(Token_Type type, std::string lexeme, bool literal, int line):
             type { type }, lexeme { std::move(lexeme) },
-            literal { std::make_unique<Bool_Literal>(literal) }, line { line }
+            literal { Literal::create(literal) }, line { line }
         { }
 
         Token(Token_Type type, std::string lexeme, std::string literal, int line):
             type { type }, lexeme { std::move(lexeme) },
-            literal { std::make_unique<String_Literal>(std::move(literal)) }, line { line }
+            literal { Literal::create(std::move(literal)) }, line { line }
         { }
 
         Token(Token_Type type, std::string lexeme, double literal, int line):
             type { type }, lexeme { std::move(lexeme) },
-            literal { std::make_unique<Number_Literal>(literal) }, line { line }
+            literal { Literal::create(literal) }, line { line }
         { }
 
         Token(const Token &token):
@@ -103,7 +103,6 @@ class Token {
         { }
 
         explicit operator std::string() const {
-            return to_string(type) + " " + lexeme + " " +
-                    (literal ? static_cast<std::string>(*literal) : "nil");
+            return to_string(type) + " " + lexeme + " " + Literal::to_string(literal);
         }
 };

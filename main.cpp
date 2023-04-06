@@ -3,8 +3,8 @@
 #include <utility>
 
 #include "err.h"
+#include "interpreter.h"
 #include "parser.h"
-#include "print_visitor.h"
 #include "scanner.h"
 
 void run(std::string source) {
@@ -12,9 +12,9 @@ void run(std::string source) {
     auto tokens { scanner.scan_tokens() };
     Parser parser { tokens };
     auto expr { parser.parse() };
-    if (had_error) { return; }
-    Print_Visitor visitor { std::cout, *expr };
-    std::cout << "\n";
+    if (had_error || ! expr) { return; }
+    static Interpreter interpreter;
+    interpreter.interpret(*expr);
 }
 
 void run_file(const char *path) {
@@ -23,7 +23,7 @@ void run_file(const char *path) {
         std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()
     };
     run(source);
-    if (had_error) { exit(EXIT_FAILURE); }
+    if (had_error || had_runtime_error) { exit(EXIT_FAILURE); }
 }
 
 void run_prompt() {

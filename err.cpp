@@ -5,6 +5,7 @@
 #include "token.h"
 
 bool had_error = false;
+bool had_runtime_error = false;
 
 static void report(int line, const std::string& where, const std::string& message) {
     std::cerr << "[line " << line << "] Error" << where << ": " << message << "\n";
@@ -21,4 +22,9 @@ void error(const Token &token, const std::string& message) {
     } else {
         report(token.line, " at '" + token.lexeme + "'", message);
     }
+}
+
+void runtime_error(const Token &token, const std::string &message) {
+    std::cerr << message << "\n[line " << token.line << "]\n";
+    had_runtime_error = true;
 }

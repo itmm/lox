@@ -34,7 +34,7 @@ class Print_Visitor: public Expr_Visitor {
         }
 
         void visit(const Literal &literal) override {
-            out_ << static_cast<std::string>(*literal.value);
+            out_ << static_cast<std::string>(literal);
         }
 
         void visit(const Unary &unary) override {

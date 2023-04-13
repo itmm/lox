@@ -1,16 +1,35 @@
 #pragma once
 
 #include <utility>
+#include <vector>
 
+#include "assign_expression.h"
 #include "binary.h"
+#include "block_statement.h"
+#include "environment.h"
 #include "expr.h"
+#include "expression_statement.h"
 #include "grouping.h"
 #include "literal.h"
+#include "print_statement.h"
+#include "statement.h"
 #include "token.h"
 #include "unary.h"
+#include "var_statement.h"
+#include "var_expression.h"
 
-class Interpreter: public Expr_Visitor {
+class Interpreter;
+
+class Env_Handler {
+        Interpreter &interpreter_;
+    public:
+        explicit Env_Handler(Interpreter &i);
+        ~Env_Handler();
+};
+
+class Interpreter: public Expr_Visitor, public Statement_Visitor {
     Literal_p value_;
+    std::unique_ptr<Environment> environment_;
 
     static bool is_truthy(const Literal_p &literal) {
         if (! literal) { return false; }
@@ -28,6 +47,8 @@ class Interpreter: public Expr_Visitor {
 
     static void check_number_operand(const Token &token, const Literal_p &right);
     static void check_number_operands(const Token &token, const Literal_p &left, const Literal_p &right);
+
+    friend class Env_Handler;
 
 public:
     class Exception: public std::domain_error {
@@ -117,10 +138,48 @@ public:
         }
     }
 
-    void interpret(const Expr &expr) {
+    void visit(const Var_Expression &expression) override {
+        const auto &got { environment_->get(expression.name) };
+        value_ = got? got->copy() : Literal_p { };
+    }
+
+    void visit(const Print_Statement &statement) override {
+        if (statement.expression) { statement.expression->accept(*this); } else { value_ = {}; }
+        std::cout << Literal::to_string(value_) << "\n";
+    }
+
+    void visit(const Expression_Statement &statement) override {
+        if (statement.expression) { statement.expression->accept(*this); }
+    }
+
+    void visit(const Var_Statement &statement) override {
+        Literal_p initializer;
+        if (statement.initializer) {
+            statement.initializer->accept(*this);
+            initializer = std::move(value_);
+        }
+        environment_->define(statement.name.lexeme, std::move(initializer));
+    }
+
+    void visit(const Assign_Expression &statement) override {
+        statement.value->accept(*this);
+        Literal_p  value = value_ ? value_->copy() : Literal_p { };
+        environment_->assign(statement.name, std::move(value));
+    }
+
+    void visit(const Block_Statement &statement) override {
+        Env_Handler env_handler { *this };
+        for (const auto &s : statement.statements) {
+            if (s) { s->accept(*this); }
+        }
+    }
+
+    void interpret(const std::vector<std::unique_ptr<Statement>> &statements) {
+        environment_ = std::make_unique<Environment>();
         try {
-            expr.accept(*this);
-            std::cout << Literal::to_string(value_) << "\n";
+            for (const auto &statement : statements) {
+                if (statement) { statement->accept(*this); }
+            }
         } catch (const Exception &ex) {
             runtime_error(ex.token, ex.what());
         }
@@ -136,3 +195,6 @@ inline void Interpreter::check_number_operands(const Token &token, const Literal
     if (left && left->is_number() && right && right->is_number()) { return; }
     throw Exception { token, "Operands must be numbers." };
 }
+
+inline Env_Handler::Env_Handler(Interpreter &i): interpreter_ { i } { interpreter_.environment_ = std::make_unique<Environment>(std::move(interpreter_.environment_)); }
+inline Env_Handler::~Env_Handler() { interpreter_.environment_ = std::move(interpreter_.environment_->enclosing()); }

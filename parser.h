@@ -4,11 +4,18 @@
 #include <utility>
 #include <vector>
 
+#include "assign_expression.h"
 #include "binary.h"
+#include "block_statement.h"
 #include "err.h"
 #include "grouping.h"
+#include "statement.h"
 #include "token.h"
 #include "unary.h"
+#include "print_statement.h"
+#include "expression_statement.h"
+#include "var_expression.h"
+#include "var_statement.h"
 
 class Parser {
         class Exception: public std::domain_error {
@@ -20,7 +27,7 @@ class Parser {
         int current_ = 0;
 
         std::unique_ptr<Expr> expression() {
-            return equality();
+            return assignment();
         }
 
         [[nodiscard]] static bool match() {
@@ -49,6 +56,22 @@ class Parser {
                 return true;
             }
             return match(other...);
+        }
+
+        std::unique_ptr<Expr> assignment() {
+            std::unique_ptr<Expr> expr = equality();
+
+            if (match(Token_Type::EQUAL)) {
+                Token equals = previous();
+                std::unique_ptr<Expr> value = assignment();
+                auto v { dynamic_cast<Var_Expression *>(expr.get()) };
+                if (v) {
+                    return std::make_unique<Assign_Expression>(v->name, std::move(value));
+                }
+                error(equals, "Invalid assignment target.");
+            }
+
+            return expr;
         }
 
         std::unique_ptr<Expr> equality() {
@@ -101,14 +124,14 @@ class Parser {
         }
 
 
-        static Exception error(const Token &token, std::string message) {
-            ::error(token, std::move(message));
+        static Exception error(const Token &token, const std::string& message) {
+            ::error(token, message);
             return {};
         }
 
-        Token consume(const Token_Type &expected, std::string message) {
+        Token consume(const Token_Type &expected, const std::string& message) {
             if (check(expected)) { return advance(); }
-            throw error(peek(), std::move(message));
+            throw error(peek(), message);
         }
 
         std::unique_ptr<Expr> primary() {
@@ -121,7 +144,9 @@ class Parser {
             if (match(Token_Type::STRING)) {
                 return Literal::create(dynamic_cast<const String_Literal &>(*previous().literal).value);
             }
-
+            if (match(Token_Type::IDENTIFIER)) {
+                return std::make_unique<Var_Expression>(previous());
+            }
             if (match(Token_Type::LEFT_PAREN)) {
                 std::unique_ptr<Expr> expr = expression();
                 consume(Token_Type::RIGHT_PAREN, "Expect ')' after expression.");
@@ -151,15 +176,64 @@ class Parser {
             }
         }
 
+        std::unique_ptr<Statement> print_statement() {
+            std::unique_ptr<Expr> expr { expression() };
+            consume(Token_Type::SEMICOLON, "Expect ';' after value.");
+            return std::make_unique<Print_Statement>(std::move(expr));
+        }
+
+        std::unique_ptr<Statement> block_statement() {
+            std::vector<std::unique_ptr<Statement>> statements;
+            while (! check(Token_Type::RIGHT_BRACE) && ! is_at_end()) {
+                statements.push_back(declaration());
+            }
+            consume(Token_Type::RIGHT_BRACE, "Expect '}' after block.");
+            return std::make_unique<Block_Statement>(std::move(statements));
+        }
+
+        std::unique_ptr<Statement> expression_statement() {
+            std::unique_ptr<Expr> expr { expression() };
+            consume(Token_Type::SEMICOLON, "Expect ';' after expression.");
+            return std::make_unique<Expression_Statement>(std::move(expr));
+        }
+
+        std::unique_ptr<Statement> statement() {
+            if (match(Token_Type::PRINT)) { return print_statement(); }
+            if (match(Token_Type::LEFT_BRACE)) { return block_statement(); }
+            return expression_statement();
+        }
+
+        std::unique_ptr<Statement> var_declaration() {
+            Token name = consume(Token_Type::IDENTIFIER, "Expect variable name.");
+            std::unique_ptr<Expr> initializer;
+            if (match(Token_Type::EQUAL)) {
+                initializer = expression();
+            }
+            consume(Token_Type::SEMICOLON, "Expect ';' after variable declaration.");
+            return std::make_unique<Var_Statement>(name, std::move(initializer));
+        }
+
+        std::unique_ptr<Statement> declaration() {
+            try {
+                if (match(Token_Type::VAR)) {
+                    return var_declaration();
+                }
+                return statement();
+            }
+            catch (const Exception &ex) {
+                synchronize();
+            }
+            return { };
+        }
+
     public:
         explicit Parser(const std::vector<Token> &tokens): tokens_ { tokens } { }
 
-        std::unique_ptr<Expr> parse() {
-            try {
-                return expression();
+        std::vector<std::unique_ptr<Statement>> parse() {
+            std::vector<std::unique_ptr<Statement>> statements;
+            while (! is_at_end()) {
+                statements.push_back(declaration());
             }
-            catch (const Exception &ex) {
-                return {};
-            }
+            return statements;
         }
 };

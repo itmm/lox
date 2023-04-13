@@ -11,10 +11,10 @@ void run(std::string source) {
     Scanner scanner { std::move(source) };
     auto tokens { scanner.scan_tokens() };
     Parser parser { tokens };
-    auto expr { parser.parse() };
-    if (had_error || ! expr) { return; }
+    auto statements { parser.parse() };
+    if (had_error) { return; }
     static Interpreter interpreter;
-    interpreter.interpret(*expr);
+    interpreter.interpret(statements);
 }
 
 void run_file(const char *path) {

@@ -12,6 +12,7 @@
 #include "grouping.h"
 #include "if_statement.h"
 #include "literal.h"
+#include "logical_expression.h"
 #include "print_statement.h"
 #include "statement.h"
 #include "token.h"
@@ -183,6 +184,16 @@ public:
             statement.else_branch->accept(*this);
         }
         value_ = {};
+    }
+
+    void visit(const Logical_Expression &statement) override {
+        if (statement.left) { statement.left->accept(*this); } else { value_ = {}; }
+        if (statement.token.type == Token_Type::OR) {
+            if (is_truthy(value_)) { return; }
+        } else {
+            if (!is_truthy(value_)) { return; }
+        }
+        if (statement.right) { statement.right->accept(*this); } else { value_ = {}; }
     }
 
     void interpret(const std::vector<std::unique_ptr<Statement>> &statements) {

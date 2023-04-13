@@ -4,6 +4,7 @@ class Assign_Expression;
 class Binary;
 class Grouping;
 class Literal;
+class Logical_Expression;
 class Unary;
 class Var_Expression;
 
@@ -16,6 +17,7 @@ public:
     virtual void visit(const Unary &unary) = 0;
     virtual void visit(const Var_Expression &expr) = 0;
     virtual void visit(const Assign_Expression &expr) = 0;
+    virtual void visit(const Logical_Expression &expr) = 0;
 };
 
 class Expr {

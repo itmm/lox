@@ -10,6 +10,7 @@
 #include "err.h"
 #include "grouping.h"
 #include "if_statement.h"
+#include "logical_expression.h"
 #include "statement.h"
 #include "token.h"
 #include "unary.h"
@@ -59,8 +60,28 @@ class Parser {
             return match(other...);
         }
 
-        std::unique_ptr<Expr> assignment() {
+        std::unique_ptr<Expr> and_expression() {
             std::unique_ptr<Expr> expr = equality();
+            while (match(Token_Type::AND)) {
+                Token op = previous();
+                std::unique_ptr<Expr> right = equality();
+                expr = std::make_unique<Logical_Expression>(op, std::move(expr), std::move(right));
+            }
+            return expr;
+        }
+
+        std::unique_ptr<Expr> or_expression() {
+            std::unique_ptr<Expr> expr = and_expression();
+            while (match(Token_Type::OR)) {
+                Token op = previous();
+                std::unique_ptr<Expr> right = and_expression();
+                expr = std::make_unique<Logical_Expression>(op, std::move(expr), std::move(right));
+            }
+            return expr;
+        }
+
+        std::unique_ptr<Expr> assignment() {
+            std::unique_ptr<Expr> expr = or_expression();
 
             if (match(Token_Type::EQUAL)) {
                 Token equals = previous();

@@ -9,6 +9,7 @@
 #include "block_statement.h"
 #include "err.h"
 #include "grouping.h"
+#include "if_statement.h"
 #include "statement.h"
 #include "token.h"
 #include "unary.h"
@@ -176,6 +177,18 @@ class Parser {
             }
         }
 
+        std::unique_ptr<Statement> if_statement() {
+            consume(Token_Type::LEFT_PAREN, "Expect '(' after 'if'.");
+            std::unique_ptr<Expr> condition { expression() };
+            consume(Token_Type::RIGHT_PAREN, "Expect ')' after if condition.");
+            std::unique_ptr<Statement> then_branch { statement() };
+            std::unique_ptr<Statement> else_branch;
+            if (match(Token_Type::ELSE)) {
+                else_branch = statement();
+            }
+            return std::make_unique<If_Statement>(std::move(condition), std::move(then_branch), std::move(else_branch));
+        }
+
         std::unique_ptr<Statement> print_statement() {
             std::unique_ptr<Expr> expr { expression() };
             consume(Token_Type::SEMICOLON, "Expect ';' after value.");
@@ -198,6 +211,7 @@ class Parser {
         }
 
         std::unique_ptr<Statement> statement() {
+            if (match(Token_Type::IF)) { return if_statement(); }
             if (match(Token_Type::PRINT)) { return print_statement(); }
             if (match(Token_Type::LEFT_BRACE)) { return block_statement(); }
             return expression_statement();

@@ -10,6 +10,7 @@
 #include "expr.h"
 #include "expression_statement.h"
 #include "grouping.h"
+#include "if_statement.h"
 #include "literal.h"
 #include "print_statement.h"
 #include "statement.h"
@@ -172,6 +173,16 @@ public:
         for (const auto &s : statement.statements) {
             if (s) { s->accept(*this); }
         }
+    }
+
+    void visit(const If_Statement &statement) override {
+        if (statement.condition) { statement.condition->accept(*this); } else { value_ = {}; }
+        if (is_truthy(value_)) {
+            if (statement.then_branch) { statement.then_branch->accept(*this); }
+        } else if (statement.else_branch) {
+            statement.else_branch->accept(*this);
+        }
+        value_ = {};
     }
 
     void interpret(const std::vector<std::unique_ptr<Statement>> &statements) {

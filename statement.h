@@ -5,6 +5,7 @@ class Expression_Statement;
 class If_Statement;
 class Print_Statement;
 class Var_Statement;
+class While_Statement;
 
 class Statement_Visitor {
     public:
@@ -14,6 +15,7 @@ class Statement_Visitor {
         virtual void visit(const Var_Statement &statement) = 0;
         virtual void visit(const Block_Statement &statement) = 0;
         virtual void visit(const If_Statement &statement) = 0;
+        virtual void visit(const While_Statement &statement) = 0;
 };
 
 class Statement {

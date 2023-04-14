@@ -19,6 +19,7 @@
 #include "unary.h"
 #include "var_statement.h"
 #include "var_expression.h"
+#include "while_statement.h"
 
 class Interpreter;
 
@@ -117,7 +118,7 @@ public:
     }
 
     void visit(const Grouping &grouping) override {
-        grouping.accept(*this);
+        grouping.expression->accept(*this);
     }
 
     void visit(const Literal &literal) override {
@@ -194,6 +195,14 @@ public:
             if (!is_truthy(value_)) { return; }
         }
         if (statement.right) { statement.right->accept(*this); } else { value_ = {}; }
+    }
+
+    void visit(const While_Statement &statement) override {
+        for (;;) {
+            if (statement.condition) { statement.condition->accept(*this); } else { value_ = {}; }
+            if (! is_truthy(value_)) { break; }
+            if (statement.body) { statement.body->accept(*this); }
+        }
     }
 
     void interpret(const std::vector<std::unique_ptr<Statement>> &statements) {

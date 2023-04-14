@@ -18,6 +18,7 @@
 #include "expression_statement.h"
 #include "var_expression.h"
 #include "var_statement.h"
+#include "while_statement.h"
 
 class Parser {
         class Exception: public std::domain_error {
@@ -216,6 +217,14 @@ class Parser {
             return std::make_unique<Print_Statement>(std::move(expr));
         }
 
+        std::unique_ptr<Statement> while_statement() {
+            consume(Token_Type::LEFT_PAREN, "Expect '(' after 'while'.");
+            std::unique_ptr<Expr> condition { expression() };
+            consume(Token_Type::RIGHT_PAREN, "Expect ')' after while condition.");
+            std::unique_ptr<Statement> body { statement() };
+            return std::make_unique<While_Statement>(std::move(condition), std::move(body));
+        }
+
         std::unique_ptr<Statement> block_statement() {
             std::vector<std::unique_ptr<Statement>> statements;
             while (! check(Token_Type::RIGHT_BRACE) && ! is_at_end()) {
@@ -231,9 +240,51 @@ class Parser {
             return std::make_unique<Expression_Statement>(std::move(expr));
         }
 
+        std::unique_ptr<Statement> for_statement() {
+            consume(Token_Type::LEFT_PAREN, "Expect '(' after 'for'.");
+            std::unique_ptr<Statement> initializer;
+            if (match(Token_Type::SEMICOLON)) {
+
+            } else if (match(Token_Type::VAR)) {
+                initializer = var_declaration();
+            } else {
+                initializer = expression_statement();
+            }
+            std::unique_ptr<Expr> condition;
+            if (! check(Token_Type::SEMICOLON)) {
+                condition = expression();
+            }
+            consume(Token_Type::SEMICOLON, "Expect ';' after loop condition.");
+            std::unique_ptr<Expr> increment;
+            if (! check(Token_Type::LEFT_PAREN)) {
+                increment = expression();
+            }
+            consume(Token_Type::RIGHT_PAREN, "Expect ')' after for clauses.");
+            std::unique_ptr<Statement> body = statement();
+            if (increment) {
+                std::vector<std::unique_ptr<Statement>> statements;
+                statements.push_back(std::move(body));
+                statements.push_back(std::make_unique<Expression_Statement>(std::move(increment)));
+                body = std::make_unique<Block_Statement>(std::move(statements));
+            }
+            if (! condition) { condition = Literal::create(true); }
+            body = std::make_unique<While_Statement>(std::move(condition), std::move(body));
+
+            if (initializer) {
+                std::vector<std::unique_ptr<Statement>> statements;
+                statements.push_back(std::move(initializer));
+                statements.push_back(std::move(body));
+                body = std::make_unique<Block_Statement>(std::move(statements));
+            }
+
+            return body;
+        }
+
         std::unique_ptr<Statement> statement() {
+            if (match(Token_Type::FOR)) { return for_statement(); }
             if (match(Token_Type::IF)) { return if_statement(); }
             if (match(Token_Type::PRINT)) { return print_statement(); }
+            if (match(Token_Type::WHILE)) { return while_statement(); }
             if (match(Token_Type::LEFT_BRACE)) { return block_statement(); }
             return expression_statement();
         }

@@ -7,6 +7,7 @@
 #include "assign_expression.h"
 #include "binary.h"
 #include "block_statement.h"
+#include "call_expression.h"
 #include "err.h"
 #include "grouping.h"
 #include "if_statement.h"
@@ -137,13 +138,39 @@ class Parser {
             return expr;
         }
 
+        std::unique_ptr<Expr> finish_call(std::unique_ptr<Expr> &&callee) {
+            std::vector<std::unique_ptr<Expr>> arguments;
+            if (! check(Token_Type::RIGHT_PAREN)) {
+                do {
+                    if (arguments.size() >= 255) {
+                        error(peek(), "Can't have more than 255 arguments.");
+                    }
+                    arguments.push_back(expression());
+                } while (match(Token_Type::COMMA));
+            }
+            Token paren = consume(Token_Type::RIGHT_PAREN, "Expect ')' after arguments.");
+            return std::make_unique<Call_Expression>(std::move(callee), paren, std::move(arguments));
+        }
+
+        std::unique_ptr<Expr> call() {
+            std::unique_ptr<Expr> expr = primary();
+            for (;;) {
+                if (match(Token_Type::LEFT_PAREN)) {
+                    expr = finish_call(std::move(expr));
+                } else {
+                    break;
+                }
+            }
+            return expr;
+        }
+
         std::unique_ptr<Expr> unary() {
             if (match(Token_Type::BANG, Token_Type::MINUS)) {
                 Token op = previous();
                 std::unique_ptr<Expr> right = unary();
                 return std::make_unique<Unary>(op, std::move(right));
             }
-            return primary();
+            return call();
         }
 
 

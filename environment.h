@@ -3,12 +3,15 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <utility>
 
 #include "literal.h"
 #include "token.h"
 
 class Environment {
-        std::unique_ptr<Environment> enclosing_;
+    public:
+        using Ptr = std::shared_ptr<Environment>;
+        Ptr enclosing_;
         std::map<std::string, std::unique_ptr<Literal>> values_;
     public:
         class Exception : public std::runtime_error {
@@ -19,9 +22,9 @@ class Environment {
         };
 
         Environment() = default;
-        explicit Environment(std::unique_ptr<Environment> &&enc): enclosing_ { std::move(enc) } { }
+        explicit Environment(Ptr enc): enclosing_ { std::move(enc) } { }
 
-        std::unique_ptr<Environment> &enclosing() { return enclosing_; }
+        Ptr &enclosing() { return enclosing_; }
 
         void define(const std::string &name, std::unique_ptr<Literal> &&value) {
             values_[name] = std::move(value);

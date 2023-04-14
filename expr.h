@@ -2,6 +2,7 @@
 
 class Assign_Expression;
 class Binary;
+class Call_Expression;
 class Grouping;
 class Literal;
 class Logical_Expression;
@@ -18,6 +19,7 @@ public:
     virtual void visit(const Var_Expression &expr) = 0;
     virtual void visit(const Assign_Expression &expr) = 0;
     virtual void visit(const Logical_Expression &expr) = 0;
+    virtual void visit(const Call_Expression &expr) = 0;
 };
 
 class Expr {

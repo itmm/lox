@@ -6,6 +6,8 @@
 #include "assign_expression.h"
 #include "binary.h"
 #include "block_statement.h"
+#include "call_expression.h"
+#include "callable_literal.h"
 #include "environment.h"
 #include "expr.h"
 #include "expression_statement.h"
@@ -20,6 +22,7 @@
 #include "var_statement.h"
 #include "var_expression.h"
 #include "while_statement.h"
+#include "clock_callable.h"
 
 class Interpreter;
 
@@ -32,7 +35,8 @@ class Env_Handler {
 
 class Interpreter: public Expr_Visitor, public Statement_Visitor {
     Literal_p value_;
-    std::unique_ptr<Environment> environment_;
+    Environment::Ptr globals_;
+    Environment::Ptr environment_;
 
     static bool is_truthy(const Literal_p &literal) {
         if (! literal) { return false; }
@@ -59,6 +63,11 @@ public:
             const Token token;
             Exception(const Token &t, const std::string& m): std::domain_error { m }, token { t } { }
     };
+
+    Interpreter() {
+        globals_ = std::make_shared<Environment>();
+        globals_->define("clock", std::make_unique<Clock_Callable>());
+    }
 
     void visit(const Binary &binary) override {
         binary.left->accept(*this);
@@ -205,8 +214,29 @@ public:
         }
     }
 
+    void visit(const Call_Expression &expr) override {
+        if (expr.callee) { expr.callee->accept(*this); } else { value_ = { }; }
+        Literal_p callee = std::move(value_);
+
+        std::vector<Literal_p> arguments;
+        for (const auto &arg: expr.arguments) {
+            if (arg) { arg->accept(*this); } else { value_ = { }; }
+            arguments.push_back(std::move(value_));
+        }
+
+        auto *fn = dynamic_cast<Callable_Literal *>(&*callee);
+        if (! fn) {
+            throw Exception(expr.paren, "Can only call functions and classes.");
+        }
+
+        if (arguments.size() != fn->arity()) {
+            throw Exception(expr.paren, "Expected " + std::to_string(fn->arity()) + " arguments, but got " + std::to_string(arguments.size()) + ".");
+        }
+        value_ = fn->call(*this, arguments);
+    }
+
     void interpret(const std::vector<std::unique_ptr<Statement>> &statements) {
-        environment_ = std::make_unique<Environment>();
+        environment_ = globals_;
         try {
             for (const auto &statement : statements) {
                 if (statement) { statement->accept(*this); }
@@ -227,5 +257,5 @@ inline void Interpreter::check_number_operands(const Token &token, const Literal
     throw Exception { token, "Operands must be numbers." };
 }
 
-inline Env_Handler::Env_Handler(Interpreter &i): interpreter_ { i } { interpreter_.environment_ = std::make_unique<Environment>(std::move(interpreter_.environment_)); }
-inline Env_Handler::~Env_Handler() { interpreter_.environment_ = std::move(interpreter_.environment_->enclosing()); }
+inline Env_Handler::Env_Handler(Interpreter &i): interpreter_ { i } { interpreter_.environment_ = std::make_shared<Environment>(interpreter_.environment_); }
+inline Env_Handler::~Env_Handler() { interpreter_.environment_ = interpreter_.environment_->enclosing(); }

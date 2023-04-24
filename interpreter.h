@@ -19,6 +19,7 @@
 #include "literal.h"
 #include "logical_expression.h"
 #include "print_statement.h"
+#include "return_statement.h"
 #include "statement.h"
 #include "token.h"
 #include "unary.h"
@@ -69,6 +70,12 @@ public:
         public:
             const Token token;
             Exception(const Token &t, const std::string& m): std::domain_error { m }, token { t } { }
+    };
+
+    class Return: public std::runtime_error {
+        public:
+            const Literal::Ptr value;
+            explicit Return(Literal::Ptr v) : runtime_error("return called"), value{std::move(v)} { }
     };
 
     Interpreter() {
@@ -249,6 +256,13 @@ public:
         auto fn = std::make_shared<Function_Callable>(definition.shared());
         environment_->define(definition.name.lexeme, fn);
         value_ = {};
+    }
+
+    void visit (const Return_Statement &return_statement) override {
+        Literal::Ptr value;
+        if (return_statement.value) { return_statement.value->accept(*this); } else { value_ = {}; }
+        value = std::move(value_);
+        throw Return(value);
     }
 
     void interpret(const std::vector<Statement::Ptr> &statements) {

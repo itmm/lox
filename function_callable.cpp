@@ -7,6 +7,10 @@ Literal::Ptr Function_Callable::call(Interpreter &interpreter, const std::vector
     for (int i = 0; i < definition->params.size(); ++i) {
         env->define(definition->params[i].lexeme, arguments[i]);
     }
-    interpreter.execute_block(*definition->body, env);
+    try {
+        interpreter.execute_block(*definition->body, env);
+    } catch (const Interpreter::Return &ret) {
+        return ret.value;
+    }
     return {};
 }

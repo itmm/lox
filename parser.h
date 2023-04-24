@@ -17,6 +17,7 @@
 #include "token.h"
 #include "unary.h"
 #include "print_statement.h"
+#include "return_statement.h"
 #include "expression_statement.h"
 #include "var_expression.h"
 #include "var_statement.h"
@@ -229,7 +230,7 @@ class Parser {
 
         Statement::Ptr if_statement() {
             consume(Token_Type::LEFT_PAREN, "Expect '(' after 'if'.");
-            Expression::Ptr condition {expression() };
+            Expression::Ptr condition { expression() };
             consume(Token_Type::RIGHT_PAREN, "Expect ')' after if condition.");
             Statement::Ptr then_branch { statement() };
             Statement::Ptr else_branch;
@@ -240,9 +241,19 @@ class Parser {
         }
 
         Statement::Ptr print_statement() {
-            Expression::Ptr expr {expression() };
+            Expression::Ptr expr { expression() };
             consume(Token_Type::SEMICOLON, "Expect ';' after value.");
             return std::make_shared<Print_Statement>(std::move(expr));
+        }
+
+        Statement::Ptr return_statement() {
+            Token keyword = previous();
+            Expression::Ptr value;
+            if (! check(Token_Type::SEMICOLON)) {
+                value = expression();
+            }
+            consume(Token_Type::SEMICOLON, "Expect ';' after return value.");
+            return std::make_shared<Return_Statement>(keyword, value);
         }
 
         Statement::Ptr while_statement() {
@@ -312,6 +323,7 @@ class Parser {
             if (match(Token_Type::FOR)) { return for_statement(); }
             if (match(Token_Type::IF)) { return if_statement(); }
             if (match(Token_Type::PRINT)) { return print_statement(); }
+            if (match(Token_Type::RETURN)) { return return_statement(); }
             if (match(Token_Type::WHILE)) { return while_statement(); }
             if (match(Token_Type::LEFT_BRACE)) { return block_statement(); }
             return expression_statement();

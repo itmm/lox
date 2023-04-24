@@ -4,13 +4,13 @@
 
 #include <memory>
 
-#include "expr.h"
+#include "expression.h"
 
 class Print_Statement: public Statement {
 public:
-    const std::unique_ptr<Expr> expression;
+    const Expression::Ptr expression;
 
-    explicit Print_Statement(std::unique_ptr<Expr> &&e): expression { std::move(e) } { }
+    explicit Print_Statement(Expression::Ptr e): expression {std::move(e) } { }
 
     void accept(Statement_Visitor &visitor) const override { visitor.visit(*this); }
 };

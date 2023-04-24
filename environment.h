@@ -12,7 +12,7 @@ class Environment {
     public:
         using Ptr = std::shared_ptr<Environment>;
         Ptr enclosing_;
-        std::map<std::string, std::unique_ptr<Literal>> values_;
+        std::map<std::string, Literal::Ptr> values_;
     public:
         class Exception : public std::runtime_error {
             public:
@@ -26,18 +26,18 @@ class Environment {
 
         Ptr &enclosing() { return enclosing_; }
 
-        void define(const std::string &name, std::unique_ptr<Literal> &&value) {
+        void define(const std::string &name, Literal::Ptr value) {
             values_[name] = std::move(value);
         }
 
-        [[nodiscard]] const Literal_p &get(const Token &name) const {
+        [[nodiscard]] const Literal::Ptr &get(const Token &name) const {
             const auto &got { values_.find(name.lexeme) };
             if (got != values_.end()) { return got->second; }
             if (enclosing_) { return enclosing_->get(name); }
             throw Exception { name, "Undefined variable '" + name.lexeme + "'." };
         }
 
-        void assign(const Token &name, std::unique_ptr<Literal> &&value) {
+        void assign(const Token &name, Literal::Ptr value) {
             auto got { values_.find(name.lexeme) };
             if (got != values_.end()) {
                 got->second = std::move(value);

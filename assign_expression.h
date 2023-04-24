@@ -1,16 +1,17 @@
 #pragma once
 
-#include "expr.h"
+#include "expression.h"
 #include "token.h"
 
 #include <memory>
+#include <utility>
 
-class Assign_Expression: public Expr {
+class Assign_Expression: public Expression {
 public:
     const Token name;
-    const std::unique_ptr<Expr> value;
+    const Expression::Ptr value;
 
-    Assign_Expression(const Token &n, std::unique_ptr<Expr> &&v): name { n }, value { std::move(v) } { }
+    Assign_Expression(const Token &n, Expression::Ptr v): name { n }, value { std::move(v) } { }
 
-    void accept(Expr_Visitor &visitor) const override { visitor.visit(*this); }
+    void accept(Expression_Visitor &visitor) const override { visitor.visit(*this); }
 };

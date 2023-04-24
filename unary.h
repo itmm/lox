@@ -1,14 +1,14 @@
 #pragma once
 
-#include "expr.h"
+#include "expression.h"
 #include "token.h"
 
-class Unary: public Expr {
+class Unary: public Expression {
     public:
         const Token token;
-        std::unique_ptr<Expr> right;
+        Expression::Ptr right;
 
-        Unary(const Token &t, std::unique_ptr<Expr> &&r): token { t }, right { std::move(r) } { }
+        Unary(const Token &t, Expression::Ptr r): token {t }, right {std::move(r) } { }
 
-        void accept(Expr_Visitor &visitor) const override { visitor.visit(*this); }
+        void accept(Expression_Visitor &visitor) const override { visitor.visit(*this); }
 };

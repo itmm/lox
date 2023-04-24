@@ -1,14 +1,14 @@
 #pragma once
 
-#include "expr.h"
+#include "expression.h"
 
 #include <memory>
 
-class Grouping: public Expr {
+class Grouping: public Expression {
     public:
-        const std::unique_ptr<Expr> expression;
+        const Expression::Ptr expression;
 
-        explicit Grouping(std::unique_ptr<Expr> &&e): expression { std::move(e) } { }
+        explicit Grouping(Expression::Ptr e): expression {std::move(e) } { }
 
-        void accept(Expr_Visitor &visitor) const override { visitor.visit(*this); }
+        void accept(Expression_Visitor &visitor) const override { visitor.visit(*this); }
 };

@@ -10,6 +10,7 @@ var c = "global c";
     print b;
     print c;
   }
+  print clock();
   print a;
   print b;
   print c;

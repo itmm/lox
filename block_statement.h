@@ -7,9 +7,11 @@
 
 class Block_Statement: public Statement {
 public:
-    const std::vector<std::unique_ptr<Statement>> statements;
+    using Ptr = std::shared_ptr<Block_Statement>;
 
-    explicit Block_Statement(std::vector<std::unique_ptr<Statement>> &&s): statements { std::move(s) } { }
+    const std::vector<Statement::Ptr> statements;
+
+    explicit Block_Statement(std::vector<Statement::Ptr> s): statements { std::move(s) } { }
 
     void accept(Statement_Visitor &visitor) const override { visitor.visit(*this); }
 };

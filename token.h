@@ -67,15 +67,10 @@ inline std::string to_string(const Token_Type &type) {
 }
 
 class Token {
-        static std::unique_ptr<Literal> duplicate_literal(const std::unique_ptr<Literal> &literal) {
-            if (! literal) { return {}; }
-            return std::move(literal->copy());
-        }
-
     public:
         const Token_Type type;
         const std::string lexeme;
-        const Literal_p literal;
+        const Literal::Ptr literal;
         const int line;
 
         Token(Token_Type type, std::string lexeme, int line):
@@ -97,10 +92,7 @@ class Token {
             literal { Literal::create(literal) }, line { line }
         { }
 
-        Token(const Token &token):
-            type { token.type }, lexeme { token.lexeme },
-            literal { duplicate_literal(token.literal) }, line { token.line }
-        { }
+        Token(const Token &token) = default;
 
         explicit operator std::string() const {
             return to_string(type) + " " + lexeme + " " + Literal::to_string(literal);
